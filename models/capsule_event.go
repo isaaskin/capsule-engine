@@ -1,6 +1,6 @@
 package models
 
 type CapsuleEvent struct {
-	Target string
-	Action string
+	Target string `json:"target"`
+	Action string `json:"action"`
 }
