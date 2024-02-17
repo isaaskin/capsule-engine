@@ -15,7 +15,7 @@ const NAMESPACE = "isaaskin"
 func GetRepositoryList() ([]models.CapsuleTemplate, error) {
 	url := REGISTRY + "/repositories/" + NAMESPACE
 
-	capsuleTemplates := make([]models.CapsuleTemplate, 1)
+	capsuleTemplates := []models.CapsuleTemplate{}
 
 	// Make the GET request
 	resp, err := http.Get(url)

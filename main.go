@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/isaaskin/capsule-engine/engine"
 	"github.com/isaaskin/capsule-engine/registryhandler"
@@ -34,16 +35,14 @@ func main() {
 	}
 	// fmt.Println(capsules)
 
-	// cM, _ := eng.StartEvent()
+	cM, _ := eng.StartEvent()
 
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case m := <-cM:
-	// 			fmt.Println(m)
-	// 		}
-	// 	}
-	// }()
+	go func() {
+		for {
+			m := <-cM
+			fmt.Println(m)
+		}
+	}()
 
 	// // engine.PullImage("isaaskin/capsule:main")
 
@@ -59,10 +58,10 @@ func main() {
 	// 	eng.StopCapsule("53806266638e00349aca19a9485a17bdf489ab1dcd51c7445f5dd689e37d82fa")
 	// }()
 
-	// go func() {
-	// 	for {
-	// 		time.Sleep(time.Second)
-	// 	}
-	// }()
-	// select {}
+	go func() {
+		for {
+			time.Sleep(time.Second)
+		}
+	}()
+	select {}
 }
