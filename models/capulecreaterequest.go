@@ -2,6 +2,6 @@ package models
 
 type CapsuleCreateRequest struct {
 	CapsuleTemplate CapsuleTemplate
-	Name            string
-	WorkingDir      string
+	Name            string `json:"name"`
+	WorkingDir      string `json:"workingDir"`
 }
