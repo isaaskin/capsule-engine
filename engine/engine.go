@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/isaaskin/capsule-engine/helpers"
@@ -43,8 +44,8 @@ type Engine struct {
 	isEvent bool
 }
 
-func (Engine *Engine) Exec() {
-	res, err := Engine.client.ContainerExecCreate(context.Background(), "IsaDevEnv", types.ExecConfig{
+func (engine *Engine) Exec() {
+	res, err := engine.client.ContainerExecCreate(context.Background(), "IsaDevEnv", types.ExecConfig{
 		Tty:          true,
 		AttachStdin:  true,
 		AttachStderr: false,
@@ -59,7 +60,7 @@ func (Engine *Engine) Exec() {
 		log.Fatalf(err.Error())
 	}
 
-	conn, err := Engine.client.ContainerExecAttach(context.Background(), res.ID, types.ExecStartCheck{})
+	conn, err := engine.client.ContainerExecAttach(context.Background(), res.ID, types.ExecStartCheck{})
 
 	if err != nil {
 		fmt.Println("error here....")
@@ -87,8 +88,8 @@ func (Engine *Engine) Exec() {
 	}
 }
 
-func (Engine *Engine) Attach() {
-	res, err := Engine.client.ContainerAttach(context.Background(),
+func (engine *Engine) Attach() {
+	res, err := engine.client.ContainerAttach(context.Background(),
 		"IsaDevEnv",
 		types.ContainerAttachOptions{
 			Stream: true,
@@ -126,37 +127,80 @@ func (Engine *Engine) Attach() {
 	}()
 }
 
-func (Engine *Engine) CreateCapsule(m *MyDevEnv) (container.CreateResponse, error) {
-	rc, err := Engine.client.ImagePull(context.Background(), m.Image, types.ImagePullOptions{})
+// TODO might not be well-handled
+func (engine *Engine) PullImage(imageName string) (<-chan string, <-chan bool, error) {
+	cStatus := make(chan string)
+	cDone := make(chan bool)
+
+	rc, err := engine.client.ImagePull(context.Background(), imageName, types.ImagePullOptions{})
+
+	if err != nil {
+		return cStatus, cDone, err
+	}
+
+	go func() {
+		scanner := bufio.NewScanner(rc)
+		for scanner.Scan() {
+			cStatus <- scanner.Text()
+		}
+		rc.Close()
+		cDone <- true
+	}()
+
+	return cStatus, cDone, err
+}
+
+func (engine *Engine) DeleteCapsule(capsule models.Capsule) error {
+	return engine.client.ContainerRemove(context.Background(), capsule.ID, types.ContainerRemoveOptions{})
+}
+
+func (engine *Engine) CreateCapsule(ccr models.CapsuleCreateRequest) (container.CreateResponse, error) {
+	image := ccr.CapsuleTemplate.Namespace + "/" + ccr.CapsuleTemplate.Name
+
+	// Pull the image
+	cStatus, cDone, err := engine.PullImage(image)
+
 	if err != nil {
 		return container.CreateResponse{}, err
 	}
 
-	scanner := bufio.NewScanner(rc)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+	loop := true
+
+	for loop {
+		select {
+		case status := <-cStatus:
+			log.Println(status)
+		case <-cDone:
+			log.Println("Image pull done")
+			loop = false
+		}
 	}
 
-	return Engine.client.ContainerCreate(context.Background(), &container.Config{
-		Image:      m.Image,
+	log.Println("Creating a capsule now")
+
+	return engine.client.ContainerCreate(context.Background(), &container.Config{
+		Image:      image,
 		Entrypoint: []string{"sleep", "infinity"},
 		ExposedPorts: map[nat.Port]struct{}{
 			"1883": {},
 		},
-	}, &container.HostConfig{}, &network.NetworkingConfig{}, &v1.Platform{}, m.Name)
+		WorkingDir: ccr.WorkingDir,
+	}, &container.HostConfig{
+		Binds: []string{os.Getenv("HOME") + "/.ssh:/root/.ssh"},
+	}, &network.NetworkingConfig{}, &v1.Platform{}, ccr.Name)
 }
 
-func (Engine *Engine) StartEvent() (<-chan models.CapsuleEvent, <-chan error) {
+func (engine *Engine) StartEvent() (<-chan models.CapsuleEvent, <-chan error) {
 	log.Println("Event has been started")
 
-	Engine.isEvent = true
+	engine.isEvent = true
 
 	cCapsuleEvent := make(chan models.CapsuleEvent)
 
-	cEventMessage, cError := Engine.client.Events(context.Background(), types.EventsOptions{})
+	cEventMessage, cError := engine.client.Events(context.Background(), types.EventsOptions{})
 
 	go func() {
-		for Engine.isEvent {
+		for engine.isEvent {
 			select {
 			case eventMessage := <-cEventMessage:
 				cCapsuleEvent <- models.CapsuleEvent{
@@ -171,33 +215,35 @@ func (Engine *Engine) StartEvent() (<-chan models.CapsuleEvent, <-chan error) {
 	return cCapsuleEvent, cError
 }
 
-func (Engine *Engine) StopEvent() {
-	Engine.isEvent = false
+func (engine *Engine) StopEvent() {
+	engine.isEvent = false
 }
 
-func (Engine *Engine) StartCapsule(id string) error {
-	return Engine.client.ContainerStart(context.Background(), id, types.ContainerStartOptions{})
+func (engine *Engine) StartCapsule(id string) error {
+	return engine.client.ContainerStart(context.Background(), id, types.ContainerStartOptions{})
 }
 
-func (Engine *Engine) StopCapsule(id string) error {
-	return Engine.client.ContainerStop(context.Background(), id, container.StopOptions{})
+func (engine *Engine) StopCapsule(id string) error {
+	return engine.client.ContainerStop(context.Background(), id, container.StopOptions{})
 }
 
-func (Engine *Engine) ListCapsules() ([]models.Capsule, error) {
-	containers, err := Engine.client.ContainerList(context.Background(), types.ContainerListOptions{
+func (engine *Engine) ListCapsules() ([]models.Capsule, error) {
+	log.Fatalln("adsadss")
+	containers, err := engine.client.ContainerList(context.Background(), types.ContainerListOptions{
 		All: true,
 	})
+	log.Fatalln(containers)
 	return helpers.ConvertContainerToCapsule(containers), err
 }
 
 func CreateEngine() *Engine {
-	Engine := Engine{}
+	engine := Engine{}
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		panic(err)
 	}
 
-	Engine.client = cli
-	return &Engine
+	engine.client = cli
+	return &engine
 }

@@ -2,74 +2,69 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"log"
 
 	"github.com/isaaskin/capsule-engine/engine"
+	"github.com/isaaskin/capsule-engine/models"
+	"github.com/isaaskin/capsule-engine/registryhandler"
 )
 
 func main() {
-	engine := engine.CreateEngine()
+	capsuleTemplates, _ := registryhandler.GetRepositoryList()
 
-	capsules, err := engine.ListCapsules()
+	fmt.Println(capsuleTemplates)
+
+	eng := engine.CreateEngine()
+
+	_, err := eng.CreateCapsule(models.CapsuleCreateRequest{
+		CapsuleTemplate: models.CapsuleTemplate{
+			Name:      "capsule-template-go",
+			Namespace: "isaaskin",
+		},
+		Name:       "GoCapsule",
+		WorkingDir: "/ben",
+	})
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	_, err = eng.ListCapsules()
 
 	if err != nil {
 		panic("Error: " + err.Error())
 	}
-	fmt.Println(capsules)
+	// fmt.Println(capsules)
 
-	cM, _ := engine.StartEvent()
+	// cM, _ := eng.StartEvent()
 
-	go func() {
-		for {
-			select {
-			case m := <-cM:
-				fmt.Println(m)
-			}
-		}
-	}()
-
-	// for _, container := range controller.ListContainers() {
-	// 	err := controller.StopContainer(container)
-	// 	if err != nil {
-	// 		log.Fatalln(err.Error())
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		case m := <-cM:
+	// 			fmt.Println(m)
+	// 		}
 	// 	}
-	// }
+	// }()
 
-	//myDevEnv := dockercontroller.MyDevEnv{®
-	//res, err := controller.CreateContainer(&myDevEnv)
+	// // engine.PullImage("isaaskin/capsule:main")
 
-	//if err != nil {
-	//	//log.Fatalf(err.Error())
-	//}
-
-	// err := controller.StartContainer("53806266638e00349aca19a9485a17bdf489ab1dcd51c7445f5dd689e37d82fa")
+	// r, err := eng.CreateCapsule("isaaskin/capsule", "/ii")
 
 	// if err != nil {
-	// 	log.Fatalf(err.Error())
+	// 	log.Fatalln(err)
 	// }
 
-	//fmt.Println(fmt.Sprintf("Container has been created: %s", res.ID))
+	// log.Println(r)
 
-	//controller.Attach()
+	// defer func() {
+	// 	eng.StopCapsule("53806266638e00349aca19a9485a17bdf489ab1dcd51c7445f5dd689e37d82fa")
+	// }()
 
-	// controller.Exec()
-
-	//controller.StartEvent()
-
-	// _, err := controller.CreateContainer()
-
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	defer func() {
-		engine.StopCapsule("53806266638e00349aca19a9485a17bdf489ab1dcd51c7445f5dd689e37d82fa")
-	}()
-
-	go func() {
-		for {
-			time.Sleep(time.Second)
-		}
-	}()
-	select {}
+	// go func() {
+	// 	for {
+	// 		time.Sleep(time.Second)
+	// 	}
+	// }()
+	// select {}
 }
