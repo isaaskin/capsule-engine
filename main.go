@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/isaaskin/capsule-engine/engine"
-	"github.com/isaaskin/capsule-engine/models"
 	"github.com/isaaskin/capsule-engine/registryhandler"
 )
 
@@ -16,20 +14,20 @@ func main() {
 
 	eng := engine.CreateEngine()
 
-	_, err := eng.CreateCapsule(models.CapsuleCreateRequest{
-		CapsuleTemplate: models.CapsuleTemplate{
-			Name:      "capsule-template-go",
-			Namespace: "isaaskin",
-		},
-		Name:       "GoCapsule",
-		WorkingDir: "/ben",
-	})
+	// _, err := eng.CreateCapsule(models.CapsuleCreateRequest{
+	// 	CapsuleTemplate: models.CapsuleTemplate{
+	// 		Name:      "capsule-template-go",
+	// 		Namespace: "isaaskin",
+	// 	},
+	// 	Name:       "GoCapsule",
+	// 	WorkingDir: "/ben",
+	// })
 
-	if err != nil {
-		log.Fatalln(err)
-	}
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
 
-	_, err = eng.ListCapsules()
+	_, err := eng.ListCapsules()
 
 	if err != nil {
 		panic("Error: " + err.Error())

@@ -228,11 +228,9 @@ func (engine *Engine) StopCapsule(id string) error {
 }
 
 func (engine *Engine) ListCapsules() ([]models.Capsule, error) {
-	log.Fatalln("adsadss")
 	containers, err := engine.client.ContainerList(context.Background(), types.ContainerListOptions{
 		All: true,
 	})
-	log.Fatalln(containers)
 	return helpers.ConvertContainerToCapsule(containers), err
 }
 
