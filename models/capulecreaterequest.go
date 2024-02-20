@@ -1,8 +1,8 @@
 package models
 
 type CapsuleCreateRequest struct {
-	CapsuleTemplate CapsuleTemplate
-	Name            string `json:"name"`
-	WorkingDir      string `json:"workingDir"`
-	UseLocalSSHKeys bool   `json:"useLocalSSHKeys"`
+	CapsuleTemplate CapsuleTemplate `json:"capsuleTemplate"`
+	Name            string          `json:"name"`
+	WorkingDir      string          `json:"workingDir"`
+	UseLocalSSHKeys bool            `json:"useLocalSSHKeys"`
 }
