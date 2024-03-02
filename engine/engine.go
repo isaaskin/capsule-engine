@@ -201,12 +201,10 @@ func (engine *Engine) StartEvent() (<-chan models.CapsuleEvent, <-chan error) {
 
 	go func() {
 		for engine.isEvent {
-			select {
-			case eventMessage := <-cEventMessage:
-				cCapsuleEvent <- models.CapsuleEvent{
-					Target: eventMessage.Actor.Attributes["name"],
-					Action: eventMessage.Action,
-				}
+			eventMessage := <-cEventMessage
+			cCapsuleEvent <- models.CapsuleEvent{
+				Target: eventMessage.Actor.Attributes["name"],
+				Action: eventMessage.Action,
 			}
 		}
 		log.Println("Event has been stopped")
